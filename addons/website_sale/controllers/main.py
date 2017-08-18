@@ -96,7 +96,7 @@ class WebsiteSaleForm(WebsiteForm):
         model_record = request.env.ref('sale.model_sale_order')
         try:
             data = self.extract_data(model_record, kwargs)
-        except ValidationError, e:
+        except ValidationError as e:
             return json.dumps({'error_fields': e.args[0]})
 
         order = request.website.sale_get_order()
@@ -178,8 +178,6 @@ class WebsiteSale(http.Controller):
         return domain
 
     @http.route([
-        '/shop',
-        '/shop/page/<int:page>',
         '/shop/category/<model("product.public.category"):category>',
         '/shop/category/<model("product.public.category"):category>/page/<int:page>'
     ], type='http', auth="public", website=True)
@@ -262,10 +260,129 @@ class WebsiteSale(http.Controller):
             'compute_currency': compute_currency,
             'keep': keep,
             'parent_category_ids': parent_category_ids,
+            'products_by_cat': [],
         }
         if category:
             values['main_object'] = category
         return request.render("website_sale.products", values)
+
+
+    @http.route([
+        '/shop',
+    ], type='http', auth="public", website=True)
+    def shop_home(self, page=0, category=None, search='', ppg=False, **post):
+        # group products by public_categ_ids
+        if ppg:
+            try:
+                ppg = int(ppg)
+            except ValueError:
+                ppg = PPG
+            post["ppg"] = ppg
+        else:
+            ppg = PPG
+
+        attrib_list = request.httprequest.args.getlist('attrib')
+        attrib_values = [map(int, v.split("-")) for v in attrib_list if v]
+        attributes_ids = set([v[0] for v in attrib_values])
+        attrib_set = set([v[1] for v in attrib_values])
+
+        domain = self._get_search_domain(search, category, attrib_values)
+
+        keep = QueryURL('/shop', category=category and int(category), search=search, attrib=attrib_list, order=post.get('order'))
+        pricelist_context = dict(request.env.context)
+        if not pricelist_context.get('pricelist'):
+            pricelist = request.website.get_current_pricelist()
+            pricelist_context['pricelist'] = pricelist.id
+        else:
+            pricelist = request.env['product.pricelist'].browse(pricelist_context['pricelist'])
+
+        request.context = dict(request.context, pricelist=pricelist.id, partner=request.env.user.partner_id)
+
+        url = "/shop"
+        if search:
+            post["search"] = search
+        if category:
+            category = request.env['product.public.category'].browse(int(category))
+            url = "/shop/category/%s" % slug(category)
+        if attrib_list:
+            post['attrib'] = attrib_list
+
+        categs = request.env['product.public.category'].search([('parent_id', '=', False)])
+        Product = request.env['product.template']
+
+        parent_category_ids = []
+        if category:
+            parent_category_ids = [category.id]
+            current_category = category
+            while current_category.parent_id:
+                parent_category_ids.append(current_category.parent_id.id)
+                current_category = current_category.parent_id
+
+        product_count = Product.search_count(domain)
+        pager = request.website.pager(url=url, total=product_count, page=page, step=ppg, scope=7, url_args=post)
+        products = Product.search(domain, limit=ppg, offset=pager['offset'], order=self._get_search_order(post))
+
+        products_by_cat = []
+        # split products by category
+        for cat in categs:
+            prods = {'category_id': cat.id, 'category': cat.display_name, 'products': []}
+            products_cat = []
+            for prod in products:
+                if prod.public_categ_ids.id == cat.id:
+                    products_cat.append(prod)
+
+            products_tmp = []
+            idx = 0
+            for product in products_cat:
+                if ((idx % 4) == 0 ) & (len(products_tmp) > 0):
+                    prods['products'].append(products_tmp)
+                    products_tmp = []
+
+                products_tmp.append(product)
+                idx += 1
+
+            # add the rest
+            if products_tmp:
+                prods['products'].append(products_tmp)
+
+            products_by_cat.append(prods)
+
+        ProductAttribute = request.env['product.attribute']
+        if products:
+            # get all products without limit
+            selected_products = Product.search(domain, limit=False)
+            attributes = ProductAttribute.search([('attribute_line_ids.product_tmpl_id', 'in', selected_products.ids)])
+        else:
+            attributes = ProductAttribute.browse(attributes_ids)
+
+        from_currency = request.env.user.company_id.currency_id
+        to_currency = pricelist.currency_id
+        compute_currency = lambda price: from_currency.compute(price, to_currency)
+
+        values = {
+            'search': search,
+            'category': category,
+            'attrib_values': attrib_values,
+            'attrib_set': attrib_set,
+            'pager': pager,
+            'pricelist': pricelist,
+            'products': products,
+            'search_count': product_count,  # common for all searchbox
+            'bins': TableCompute().process(products, ppg),
+            'rows': PPR,
+            'categories': categs,
+            'attributes': attributes,
+            'compute_currency': compute_currency,
+            'keep': keep,
+            'parent_category_ids': parent_category_ids,
+            'all_categories': True,
+            'products_by_cat': products_by_cat
+        }
+        if category:
+            values['main_object'] = category
+
+        return request.render("website_sale.products", values)
+
 
     @http.route(['/shop/product/<model("product.template"):product>'], type='http', auth="public", website=True)
     def product(self, product, category='', search='', **kwargs):
@@ -447,10 +564,10 @@ class WebsiteSale(http.Controller):
         return values
 
     def _get_mandatory_billing_fields(self):
-        return ["name", "email", "street", "city", "country_id"]
+        return ["name", "email", "street", "city"]
 
     def _get_mandatory_shipping_fields(self):
-        return ["name", "street", "city", "country_id"]
+        return ["name", "street", "city"]
 
     def checkout_form_validate(self, mode, all_form_values, data):
         # mode: tuple ('new|edit', 'billing|shipping')

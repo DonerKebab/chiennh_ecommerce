@@ -434,7 +434,7 @@ class PaymentTransaction(models.Model):
     partner_zip = fields.Char('Zip')
     partner_address = fields.Char('Address')
     partner_city = fields.Char('City')
-    partner_country_id = fields.Many2one('res.country', 'Country', default=_get_default_partner_country_id, required=True)
+    partner_country_id = fields.Many2one('res.country', 'Country', default=_get_default_partner_country_id, required=False)
     partner_phone = fields.Char('Phone')
     html_3ds = fields.Char('3D Secure HTML')
 
