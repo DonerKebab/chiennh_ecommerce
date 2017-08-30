@@ -564,10 +564,10 @@ class WebsiteSale(http.Controller):
         return values
 
     def _get_mandatory_billing_fields(self):
-        return ["name", "email", "street", "city"]
+        return ["name", "phone", "street", "city"]
 
     def _get_mandatory_shipping_fields(self):
-        return ["name", "street", "city"]
+        return ["name", "phone", "street", "city"]
 
     def checkout_form_validate(self, mode, all_form_values, data):
         # mode: tuple ('new|edit', 'billing|shipping')
