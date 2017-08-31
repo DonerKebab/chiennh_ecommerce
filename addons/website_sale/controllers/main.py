@@ -322,10 +322,16 @@ class WebsiteSale(http.Controller):
         pager = request.website.pager(url=url, total=product_count, page=page, step=ppg, scope=7, url_args=post)
         products = Product.search(domain, limit=ppg, offset=pager['offset'], order=self._get_search_order(post))
 
+        all_categories = []
+        for item in categs:
+            all_categories.append(item)
+            if item.child_id:
+                all_categories.append(item.child_id)
+
         products_by_cat = []
         # split products by category
-        for cat in categs:
-            prods = {'category_id': cat.id, 'category': cat.display_name, 'products': []}
+        for cat in all_categories:
+            prods = {'category_id': cat.id, 'category': cat.name, 'products': []}
             products_cat = []
             for prod in products:
                 if prod.public_categ_ids.id == cat.id:
@@ -375,7 +381,6 @@ class WebsiteSale(http.Controller):
             'compute_currency': compute_currency,
             'keep': keep,
             'parent_category_ids': parent_category_ids,
-            'all_categories': True,
             'products_by_cat': products_by_cat
         }
         if category:
