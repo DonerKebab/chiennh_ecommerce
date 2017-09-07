@@ -148,6 +148,8 @@ msgid ""
 "<span class=\"fa fa-check\"/>\n"
 "                                <span>In Stock</span>"
 msgstr ""
+"<span class=\"fa fa-check\"/>\n"
+"                                <span>Còn hàng</span>"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.product
@@ -1378,7 +1380,7 @@ msgstr ""
 #. module: website_sale
 #: selection:product.template,availability:0
 msgid "In Stock"
-msgstr ""
+msgstr "Còn hàng"
 
 #. module: website_sale
 #: model:ir.ui.view,arch_db:website_sale.website_planner

@@ -322,12 +322,17 @@ class WebsiteSale(http.Controller):
         pager = request.website.pager(url=url, total=product_count, page=page, step=ppg, scope=7, url_args=post)
         products = Product.search(domain, limit=ppg, offset=pager['offset'], order=self._get_search_order(post))
 
-        all_categories = []
-        for item in categs:
-            all_categories.append(item)
-            if item.child_id:
-                all_categories.append(item.child_id)
+        try:
+            all_categories = []
+            for item in categs:
+                all_categories.append(item)
+                if item.child_id:
+                    for ch_id in item.child_id:
+                        all_categories.append(ch_id)
 
+            print(all_categories)
+        except:
+            print('loi o day')
         products_by_cat = []
         # split products by category
         for cat in all_categories:
