@@ -240,7 +240,9 @@
                                                 <div class="row">
                                                     <div class="row">
                                                         <div class="col-md-9">
-                                                            <h3 t-esc="prod_cat['category']"> </h3>
+                                                            <h3 >
+                                                                <a t-esc="prod_cat['category_name']" t-att-href="keep('/shop/category/' + slug(prod_cat['category']), category=0)"></a>
+                                                            </h3>
                                                         </div>
                                                         <div class="col-md-3">
                                                             <!-- Controls -->
@@ -283,15 +285,6 @@
                                                                 <t t-set="idx" t-value="1"/>
                                                                 <hr/>
                                                                 </t>
-                                                            <!-- Left and right controls -->
-                                                         <!--    <a class="left carousel-control" t-attf-href="#carousel-{{prod_cat_index}}" data-slide="prev">
-                                                                <span class="glyphicon glyphicon-chevron-left"></span>
-                                                                <span class="sr-only">Previous</span>
-                                                            </a>
-                                                            <a class="right carousel-control" t-attf-href="#carousel-{{prod_cat_index}}" data-slide="next">
-                                                                <span class="glyphicon glyphicon-chevron-right"></span>
-                                                                <span class="sr-only">Next</span>
-                                                            </a> -->
                                                         </div>
                                                     </div>
                                                 </div>

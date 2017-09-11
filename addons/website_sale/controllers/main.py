@@ -270,7 +270,7 @@ class WebsiteSale(http.Controller):
     @http.route([
         '/shop',
     ], type='http', auth="public", website=True)
-    def shop_home(self, page=0, category=None, search='', ppg=False, **post):
+    def shop_home(self, page=0, category=None, search='', ppg=200000, **post):
         # group products by public_categ_ids
         if ppg:
             try:
@@ -322,21 +322,17 @@ class WebsiteSale(http.Controller):
         pager = request.website.pager(url=url, total=product_count, page=page, step=ppg, scope=7, url_args=post)
         products = Product.search(domain, limit=ppg, offset=pager['offset'], order=self._get_search_order(post))
 
-        try:
-            all_categories = []
-            for item in categs:
-                all_categories.append(item)
-                if item.child_id:
-                    for ch_id in item.child_id:
-                        all_categories.append(ch_id)
+        all_categories = []
+        for item in categs:
+            all_categories.append(item)
+            if item.child_id:
+                for ch_id in item.child_id:
+                    all_categories.append(ch_id)
 
-            print(all_categories)
-        except:
-            print('loi o day')
         products_by_cat = []
         # split products by category
         for cat in all_categories:
-            prods = {'category_id': cat.id, 'category': cat.name, 'products': []}
+            prods = {'category': cat, 'category_name': cat.name,   'products': []}
             products_cat = []
             for prod in products:
                 if prod.public_categ_ids.id == cat.id:
