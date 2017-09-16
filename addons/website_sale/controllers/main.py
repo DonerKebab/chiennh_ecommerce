@@ -325,9 +325,6 @@ class WebsiteSale(http.Controller):
         all_categories = []
         for item in categs:
             all_categories.append(item)
-            if item.child_id:
-                for ch_id in item.child_id:
-                    all_categories.append(ch_id)
 
         products_by_cat = []
         # split products by category
@@ -335,7 +332,9 @@ class WebsiteSale(http.Controller):
             prods = {'category': cat, 'category_name': cat.name,   'products': []}
             products_cat = []
             for prod in products:
-                if prod.public_categ_ids.id == cat.id:
+                if prod.public_categ_ids.parent_id:
+                    print prod.name, prod.id
+                if prod.public_categ_ids.parent_id.id == cat.id:
                     products_cat.append(prod)
 
             products_tmp = []
